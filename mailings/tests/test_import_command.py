@@ -9,6 +9,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import CommandError, call_command
 from openpyxl import Workbook
 
+from mailings.delivery import DeliveryNotSent
 from mailings.models import ImportRun, MailingRecord
 
 
@@ -38,7 +39,7 @@ def test_imports_valid_rows_and_sends_only_created_records(tmp_path: Path, user)
     )
     stdout = StringIO()
 
-    with patch("mailings.services.send_email") as mocked_send:
+    with patch("mailings.delivery.send_email") as mocked_send:
         call_command("import_mailings", source, stdout=stdout)
 
     assert MailingRecord.objects.count() == 2
@@ -57,7 +58,7 @@ def test_repeated_file_is_idempotent(tmp_path: Path, user) -> None:
     source = tmp_path / "mailings.xlsx"
     make_workbook(source, [("ext-1", user.pk, "alice@example.com", "Welcome", "Hello")])
 
-    with patch("mailings.services.send_email") as mocked_send:
+    with patch("mailings.delivery.send_email") as mocked_send:
         call_command("import_mailings", source)
         call_command("import_mailings", source)
 
@@ -135,7 +136,7 @@ def test_no_send_leaves_records_pending(tmp_path: Path, user) -> None:
     source = tmp_path / "mailings.xlsx"
     make_workbook(source, [("ext-1", user.pk, "alice@example.com", "Welcome", "Hello")])
 
-    with patch("mailings.services.send_email") as mocked_send:
+    with patch("mailings.delivery.send_email") as mocked_send:
         call_command("import_mailings", source, "--no-send")
 
     assert MailingRecord.objects.get().status == MailingRecord.Status.PENDING
@@ -153,7 +154,7 @@ def test_delivery_failure_is_recorded_and_next_message_is_processed(tmp_path: Pa
         ],
     )
 
-    with patch("mailings.services.send_email", side_effect=[RuntimeError("SMTP unavailable"), None]):
+    with patch("mailings.delivery.send_email", side_effect=[DeliveryNotSent("SMTP unavailable"), None]):
         call_command("import_mailings", source)
 
     failed = MailingRecord.objects.get(external_id="ext-1")

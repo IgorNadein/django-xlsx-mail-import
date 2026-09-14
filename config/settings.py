@@ -59,7 +59,12 @@ if os.getenv("POSTGRES_HOST"):
         }
     }
 else:
-    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": str(BASE_DIR / "db.sqlite3")}}
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.getenv("SQLITE_PATH", str(BASE_DIR / "db.sqlite3")),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS: list[dict[str, Any]] = []
 LANGUAGE_CODE = "en-us"

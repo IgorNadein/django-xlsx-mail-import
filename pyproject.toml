@@ -1,6 +1,6 @@
 [project]
 name = "django-xlsx-mail-import"
-version = "0.1.0"
+version = "0.2.0"
 description = "A production-style Django management command for idempotent XLSX mailing imports."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -8,7 +8,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Igor Nadein" }]
 dependencies = [
-    "Django>=4.2,<6.0",
+    "Django>=5.2,<5.3",
     "openpyxl>=3.1,<4.0",
     "psycopg[binary]>=3.2,<4.0",
     "gunicorn>=23.0,<24.0",
