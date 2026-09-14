@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: mailings
+      POSTGRES_USER: mailings
+      POSTGRES_PASSWORD: mailings
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mailings -d mailings"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    command: >-
+      sh -c "python manage.py migrate &&
+      gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+    environment:
+      DJANGO_SECRET_KEY: docker-development-key
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,web
+      POSTGRES_DB: mailings
+      POSTGRES_USER: mailings
+      POSTGRES_PASSWORD: mailings
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "8016:8000"
+    volumes:
+      - ./samples:/data:ro
+
+volumes:
+  postgres_data:
