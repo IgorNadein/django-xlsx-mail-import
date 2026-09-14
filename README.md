@@ -1,5 +1,10 @@
 # Django XLSX Mailing Import
 
+[![CI](https://github.com/IgorNadein/django-xlsx-mail-import/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorNadein/django-xlsx-mail-import/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Django 4.2+](https://img.shields.io/badge/Django-4.2%2B-092E20?logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 [Русская версия](README.ru.md)
 
 A production-style Django management command that imports mailing jobs from an XLSX workbook and logs their delivery after a required random delay. It is designed for large files: the workbook is read in streaming mode, validation and database lookups are batched, and imported records are delivered through a database iterator.
@@ -25,6 +30,18 @@ A production-style Django management command that imports mailing jobs from an X
 The `external_id` column is unique in the database. This is the final protection against two concurrent commands inserting the same external record. `bulk_create(ignore_conflicts=True)` lets one command continue when another wins that race.
 
 Delivery states are `pending`, `processing`, `sent`, and `failed`. A command sends only records created by its own import run, so importing an old file never resends earlier records.
+
+```mermaid
+flowchart LR
+    XLSX[XLSX workbook] --> STREAM[Read-only row stream]
+    STREAM --> VALIDATE[Batch validation]
+    VALIDATE --> LOOKUPS[User and external ID lookups]
+    LOOKUPS --> INSERT[Conflict-safe bulk insert]
+    INSERT --> CLAIM[Transactional claim]
+    CLAIM --> DELAY[5–20 second delay]
+    DELAY --> LOG[Delivery log]
+    VALIDATE --> REPORT[Row errors and summary]
+```
 
 ## XLSX format
 

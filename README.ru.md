@@ -1,5 +1,10 @@
 # Импорт XLSX-рассылок в Django
 
+[![CI](https://github.com/IgorNadein/django-xlsx-mail-import/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorNadein/django-xlsx-mail-import/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Django 4.2+](https://img.shields.io/badge/Django-4.2%2B-092E20?logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![Лицензия: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 [English version](README.md)
 
 Проект содержит Django management command для импорта рассылок из XLSX и имитации отправки письма записью в лог после обязательной случайной задержки. Решение рассчитано на большие файлы: книга читается в потоковом режиме, валидация и запросы к базе выполняются пакетами, а созданные записи перебираются через итератор базы данных.
@@ -25,6 +30,18 @@
 Поле `external_id` уникально на уровне базы. Это защищает от дублей даже при одновременном запуске двух команд. При конкурентной вставке `bulk_create(ignore_conflicts=True)` оставляет одну запись и позволяет импорту продолжиться.
 
 Статусы доставки: `pending`, `processing`, `sent`, `failed`. Команда отправляет только записи, созданные текущим запуском, поэтому повторный импорт старого файла не отправляет письма ещё раз.
+
+```mermaid
+flowchart LR
+    XLSX[Книга XLSX] --> STREAM[Потоковое чтение]
+    STREAM --> VALIDATE[Пакетная проверка]
+    VALIDATE --> LOOKUPS[Поиск пользователей и ID]
+    LOOKUPS --> INSERT[Массовая вставка без дублей]
+    INSERT --> CLAIM[Транзакционное резервирование]
+    CLAIM --> DELAY[Задержка 5–20 секунд]
+    DELAY --> LOG[Запись отправки в лог]
+    VALIDATE --> REPORT[Ошибки строк и итог]
+```
 
 ## Формат XLSX
 
